@@ -50,6 +50,7 @@ mod tests {
         // assert_eq!(part_2(&input),);
     }
 
+    #[cfg(input_exists)]
     #[test]
     fn test_my_input() {
         let input = input_generator(include_str!("../../input/2025/dayxx.txt"));
