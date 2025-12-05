@@ -15,7 +15,6 @@ fn parse_input(input: &str) -> nom::IResult<&str, Input> {
     Ok((input, Input { ranges }))
 }
 
-#[aoc_generator(day2)]
 pub fn input_generator(input: &str) -> Input {
     let (remaining, result) = parse_input(input).expect("failed to parse input");
     assert!(remaining.trim().is_empty(), "failed to parse entire input");
@@ -44,7 +43,6 @@ fn is_invalid_id1(id: u64) -> bool {
     digits[..num_digits / 2] == digits[num_digits / 2..num_digits]
 }
 
-#[aoc(day2, part1)]
 pub fn part_1(input: &Input) -> u64 {
     input
         .ranges
@@ -78,7 +76,6 @@ fn is_invalid_id2(id: u64) -> bool {
     false
 }
 
-#[aoc(day2, part2)]
 pub fn part_2(input: &Input) -> u64 {
     input
         .ranges

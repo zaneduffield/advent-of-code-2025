@@ -20,7 +20,6 @@ fn parse_input(input: &str) -> nom::IResult<&str, Input> {
     Ok((input, Input { instructions }))
 }
 
-#[aoc_generator(day1)]
 pub fn input_generator(input: &str) -> Input {
     let (remaining, result) = parse_input(input).expect("failed to parse input");
     assert!(remaining.trim().is_empty(), "failed to parse entire input");
@@ -29,7 +28,6 @@ pub fn input_generator(input: &str) -> Input {
 
 const INIT: i16 = 50;
 
-#[aoc(day1, part1)]
 pub fn part_1(input: &Input) -> u32 {
     input
         .instructions
@@ -48,7 +46,6 @@ pub fn part_1(input: &Input) -> u32 {
         .1
 }
 
-#[aoc(day1, part2)]
 pub fn part_2(input: &Input) -> u32 {
     input
         .instructions
