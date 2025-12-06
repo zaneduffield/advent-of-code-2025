@@ -21,14 +21,20 @@ macro_rules! run_parts {
         let instant = Instant::now();
         let input = input_str!($d);
         let processed_input = $g(&input);
-        println!(
-            "day {0}-1: {1}\nday {0}-2: {2}",
-            $d,
-            $m::part_1(&processed_input),
-            $m::part_2(&processed_input)
-        );
+        let parse_time = instant.elapsed();
+        let sol1 = $m::part_1(&processed_input);
+        let sol1_time = instant.elapsed();
+        let sol2 = $m::part_2(&processed_input);
+        let sol2_time = instant.elapsed();
+        println!("day {0}-1: {1}\nday {0}-2: {2}", $d, sol1, sol2,);
 
-        println!("{:?}\n", instant.elapsed());
+        println!(
+            "{:?} (parse: {:?}, 1: {:?}, 2: {:?})\n",
+            sol2_time,
+            parse_time,
+            sol1_time - parse_time,
+            sol2_time - sol1_time
+        );
     };
 }
 
