@@ -3,24 +3,27 @@ use std::ops::RangeInclusive;
 use nom::{Parser, character::complete::*, multi::*, sequence::separated_pair};
 
 pub struct Input {
-    fresh_ranges: Vec<RangeInclusive<u64>>,
-    ingredients: Vec<u64>,
+    sorted_fresh_ranges: Vec<RangeInclusive<u64>>,
+    sorted_ingredients: Vec<u64>,
 }
 
 fn parse_input(input: &str) -> nom::IResult<&str, Input> {
-    let (input, fresh_ranges) = separated_list1(
+    let (input, mut fresh_ranges) = separated_list1(
         line_ending,
         separated_pair(u64, char('-'), u64).map(|(start, end)| start..=end),
     )
     .parse(input)?;
 
-    let (input, ingredients) = separated_list1(line_ending, u64).parse(input.trim())?;
+    let (input, mut ingredients) = separated_list1(line_ending, u64).parse(input.trim())?;
+
+    fresh_ranges.sort_by_key(|r| *r.start());
+    ingredients.sort();
 
     Ok((
         input,
         Input {
-            fresh_ranges,
-            ingredients,
+            sorted_fresh_ranges: fresh_ranges,
+            sorted_ingredients: ingredients,
         },
     ))
 }
@@ -32,82 +35,45 @@ pub fn input_generator(input: &str) -> Input {
 }
 
 pub fn part_1(input: &Input) -> u32 {
-    input
-        .ingredients
-        .iter()
-        .filter(|i| input.fresh_ranges.iter().any(|r| r.contains(i)))
-        .count() as u32
-}
+    // a simple loop with a .contains check is simpler, but this is faster
 
-pub fn part_2(input: &Input) -> u64 {
-    let mut disjoint_ranges: Vec<RangeInclusive<u64>> = vec![];
-    for r in &input.fresh_ranges {
-        if let Some((pos, r2)) = disjoint_ranges
-            .iter_mut()
-            .enumerate()
-            .find(|(_, r2)| *r.start() <= *r2.end())
+    let mut total = 0;
+    let mut min_idx = 0;
+    for ingredient in &input.sorted_ingredients {
+        while input
+            .sorted_fresh_ranges
+            .get(min_idx)
+            .is_some_and(|r| *r.end() < *ingredient)
         {
-            let (merge_left, merge_right) = if r.contains(r2.start()) && r.contains(r2.end()) {
-                // new interval completely contains old interval; need to merge on both sides
-                (true, true)
-            } else if r2.contains(r.start()) && r2.contains(r.end()) {
-                // old interval completely contains new interval; ignore
-                continue;
-            } else if *r.start() < *r2.start() {
-                // new interval intersects with the start of an old interval.
-                // need to merge on the left
-                (true, false)
-            } else {
-                // new interval intersects with the end of an old interval.
-                // need to merge on the right
-                (false, true)
-            };
+            min_idx += 1;
+        }
 
-            if merge_right {
-                if *r2.end() >= *r.start() {
-                    *r2 = *r2.start()..=*r.start() - 1;
-                }
-
-                for r3 in &mut disjoint_ranges[pos + 1..] {
-                    if *r3.end() <= *r.end() {
-                        *r3 = *r3.start()..=*r3.start() - 1;
-                        continue;
-                    } else if *r3.start() <= *r.end() {
-                        *r3 = (*r.end() + 1).max(*r3.start())..=*r3.end();
-                    }
-                    break;
-                }
+        for r in &input.sorted_fresh_ranges[min_idx..] {
+            if *r.start() > *ingredient {
+                break;
             }
-
-            // reborrow
-            let r2 = &mut disjoint_ranges[pos];
-            let mut insert_pos = pos + 1;
-
-            if merge_left {
-                insert_pos = pos;
-
-                if *r2.start() <= *r.end() {
-                    *r2 = *r.end() + 1..=*r2.end();
-                }
-
-                for r3 in disjoint_ranges[..pos].iter_mut().rev() {
-                    if *r3.start() >= *r.start() {
-                        *r3 = *r3.start()..=*r3.start() - 1;
-                        continue;
-                    } else if *r3.end() >= *r.start() {
-                        *r3 = *r3.start()..=(*r.start() - 1).min(*r3.end());
-                    }
-                    break;
-                }
+            if *r.end() >= *ingredient {
+                total += 1;
+                break;
             }
-
-            disjoint_ranges.insert(insert_pos, r.clone());
-        } else {
-            disjoint_ranges.push(r.clone());
         }
     }
 
-    disjoint_ranges.iter().map(|r| r.size_hint().0 as u64).sum()
+    total
+}
+
+pub fn part_2(input: &Input) -> u64 {
+    let mut total = 0u64;
+    let mut last_included = 0u64;
+    for r in &input.sorted_fresh_ranges {
+        let size = 1 + *r.end() - *r.start();
+        total += size;
+        if *r.start() <= last_included {
+            total -= (1 + last_included - *r.start()).min(size)
+        }
+        last_included = last_included.max(*r.end());
+    }
+    total
 }
 
 #[cfg(test)]
