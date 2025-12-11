@@ -50,7 +50,7 @@ pub fn part_2(input: &Input) -> u64 {
     {
         if p1.0 == p2.0 {
             vert_edges.push((p1.0, minmax_range(p1.1, p2.1)))
-        } else if p1.1 == p2.1 {
+        } else {
             hori_edges.push((p1.1, minmax_range(p1.0, p2.0)))
         }
     }
@@ -58,14 +58,42 @@ pub fn part_2(input: &Input) -> u64 {
     vert_edges.sort_by_key(|e| e.0);
     hori_edges.sort_by_key(|e| e.0);
 
+    let vert_max = vert_edges
+        .iter()
+        .max_by_key(|e| e.1.clone().count())
+        .unwrap();
+    let hori_max = hori_edges
+        .iter()
+        .max_by_key(|e| e.1.clone().count())
+        .unwrap();
+
     let mut rects: Vec<_> = rects(input)
         .map(|(p1, p2)| (rect_area((p1, p2)), p1, p2))
         .collect();
     rects.sort_by_key(|x| x.0);
 
+    let mut hit = 0;
+    let mut total = 0;
     'outer: for (area, p1, p2) in rects.iter().rev() {
         let xrange = p1.0.min(p2.0)..=p1.0.max(p2.0);
         let yrange = p1.1.min(p2.1)..=p1.1.max(p2.1);
+        total += 1;
+
+        // optimise by checking for intersection with the longest edges first
+        if (vert_max.1.contains(yrange.start()) || vert_max.1.contains(yrange.end()))
+            && *xrange.start() < vert_max.0
+            && vert_max.0 < *xrange.end()
+        {
+            hit += 1;
+            continue;
+        }
+        if (hori_max.1.contains(xrange.start()) || hori_max.1.contains(xrange.end()))
+            && *yrange.start() < hori_max.0
+            && hori_max.0 < *yrange.end()
+        {
+            hit += 1;
+            continue;
+        }
 
         let mut outside = false;
         let mut last_outside = false;
@@ -121,6 +149,7 @@ pub fn part_2(input: &Input) -> u64 {
             last_outside = outside;
         }
 
+        eprintln!("hit ratio: {:.2}", hit as f64 / total as f64);
         return *area;
     }
 
