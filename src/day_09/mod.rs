@@ -69,8 +69,13 @@ pub fn part_2(input: &Input) -> u64 {
 
         let mut outside = false;
         let mut last_outside = false;
+        let mut edge_pos = vert_edges.partition_point(|edge| edge.0 < *xrange.start());
         for x in *xrange.start() + 1..*xrange.end() {
-            let mut edge_pos = vert_edges.partition_point(|edge| edge.0 < x);
+            while let Some(edge) = vert_edges.get(edge_pos)
+                && edge.0 < x
+            {
+                edge_pos += 1;
+            }
 
             while let Some(edge) = vert_edges.get(edge_pos)
                 && edge.0 == x
@@ -91,8 +96,13 @@ pub fn part_2(input: &Input) -> u64 {
 
         let mut outside = false;
         let mut last_outside = false;
+        let mut edge_pos = hori_edges.partition_point(|edge| edge.0 < *yrange.start());
         for y in *yrange.start() + 1..*yrange.end() {
-            let mut edge_pos = hori_edges.partition_point(|edge| edge.0 < y);
+            while let Some(edge) = hori_edges.get(edge_pos)
+                && edge.0 < y
+            {
+                edge_pos += 1;
+            }
 
             while let Some(edge) = hori_edges.get(edge_pos)
                 && edge.0 == y
