@@ -67,93 +67,58 @@ pub fn part_2(input: &Input) -> u64 {
         .max_by_key(|e| e.1.clone().count())
         .unwrap();
 
-    let mut rects: Vec<_> = rects(input)
+    let rects: Vec<_> = rects(input)
         .map(|(p1, p2)| (rect_area((p1, p2)), p1, p2))
         .collect();
-    rects.sort_by_key(|x| x.0);
 
-    let mut hit = 0;
-    let mut total = 0;
+    let mut max_area = 0;
     'outer: for (area, p1, p2) in rects.iter().rev() {
+        if *area <= max_area {
+            continue;
+        }
         let xrange = p1.0.min(p2.0)..=p1.0.max(p2.0);
         let yrange = p1.1.min(p2.1)..=p1.1.max(p2.1);
-        total += 1;
 
         // optimise by checking for intersection with the longest edges first
         if (vert_max.1.contains(yrange.start()) || vert_max.1.contains(yrange.end()))
             && *xrange.start() < vert_max.0
             && vert_max.0 < *xrange.end()
         {
-            hit += 1;
             continue;
         }
         if (hori_max.1.contains(xrange.start()) || hori_max.1.contains(xrange.end()))
             && *yrange.start() < hori_max.0
             && hori_max.0 < *yrange.end()
         {
-            hit += 1;
             continue;
         }
 
-        let mut outside = false;
-        let mut last_outside = false;
-        let mut edge_pos = vert_edges.partition_point(|edge| edge.0 < *xrange.start());
-        for x in *xrange.start() + 1..*xrange.end() {
-            while let Some(edge) = vert_edges.get(edge_pos)
-                && edge.0 < x
-            {
-                edge_pos += 1;
-            }
+        let edge_pos = vert_edges.partition_point(|edge| edge.0 <= *xrange.start());
+        let end_edge_pos = vert_edges[edge_pos..].partition_point(|edge| edge.0 < *xrange.end());
 
-            while let Some(edge) = vert_edges.get(edge_pos)
-                && edge.0 == x
+        for v_edge in &vert_edges[edge_pos..edge_pos + end_edge_pos] {
+            if (v_edge.1.start() < yrange.end() && v_edge.1.end() > yrange.start())
+                || (v_edge.1.end() > yrange.start() && v_edge.1.start() < yrange.end())
             {
-                edge_pos += 1;
-                if edge.1.contains(&(*yrange.start() + 1)) || edge.1.contains(&(*yrange.end() - 1))
-                {
-                    outside = !outside;
-                    break;
-                }
-            }
-
-            if last_outside && outside {
                 continue 'outer;
             }
-            last_outside = outside;
         }
 
-        let mut outside = false;
-        let mut last_outside = false;
-        let mut edge_pos = hori_edges.partition_point(|edge| edge.0 < *yrange.start());
-        for y in *yrange.start() + 1..*yrange.end() {
-            while let Some(edge) = hori_edges.get(edge_pos)
-                && edge.0 < y
-            {
-                edge_pos += 1;
-            }
+        let edge_pos = hori_edges.partition_point(|edge| edge.0 <= *yrange.start());
+        let end_edge_pos = hori_edges[edge_pos..].partition_point(|edge| edge.0 < *yrange.end());
 
-            while let Some(edge) = hori_edges.get(edge_pos)
-                && edge.0 == y
+        for h_edge in &hori_edges[edge_pos..edge_pos + end_edge_pos] {
+            if (h_edge.1.start() < xrange.end() && h_edge.1.end() > xrange.start())
+                || (h_edge.1.end() > xrange.start() && h_edge.1.start() < xrange.end())
             {
-                edge_pos += 1;
-                if edge.1.contains(&(*xrange.start() + 1)) || edge.1.contains(&(*xrange.end() - 1))
-                {
-                    outside = !outside;
-                    break;
-                }
-            }
-
-            if last_outside && outside {
                 continue 'outer;
             }
-            last_outside = outside;
         }
 
-        eprintln!("hit ratio: {:.2}", hit as f64 / total as f64);
-        return *area;
+        max_area = *area;
     }
 
-    panic!("failed to find solution!");
+    max_area
 }
 
 #[cfg(test)]
